@@ -331,15 +331,15 @@ namespace ClsRS
             dElp[0] = new GF(0, GF.InKind.inVal);
             for (short cnt = 1; cnt < elp.Length; cnt++)
             {
-                dElp[cnt - 1] = new GF(cnt, GF.InKind.inVal) * elp[cnt];
+                dElp[cnt - 1] = new GF((short)(cnt % 2), GF.InKind.inVal) * elp[cnt];
             }
 
             // 各誤り値の算出
             // e[k] = elp(α^(-jk) ÷ elpP(α^(-jk)) * eLoc[jk]
             for (int cnt = 0; cnt < eLoc.Length; cnt++)
             {
-                GF elpPAlpha = SubstAlpha(dElp, (short)((GF_MOD - eLoc[cnt].exp) % GF_MOD));
-                GF eepAlpha = SubstAlpha(eep, (short)((GF_MOD - eLoc[cnt].exp) % GF_MOD));
+                GF elpPAlpha = SubstAlpha(dElp, (short)((GF_MOD - 1 - eLoc[cnt].exp) % GF_MOD));
+                GF eepAlpha = SubstAlpha(eep, (short)((GF_MOD - 1 - eLoc[cnt].exp) % GF_MOD));
                 errP[eLoc[cnt].exp] = eepAlpha / elpPAlpha * eLoc[cnt];
             }
         }
