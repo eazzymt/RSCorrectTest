@@ -227,10 +227,10 @@ namespace ClsRS
             {
                 // 各パラメータを計算
 
-                // pA2÷pA1の商をpQに格納（GF(2^m)係数多項式の割り算）
+                // pA2÷pA1の商をpQに格納
                 pQ = QuotPoly(pA2, pA1);
 
-                // pA = -pQ*pA1 + pA2
+                // pA = -pQ * pA1 + pA2
                 pA = MinusPoly(pA2, MulPoly(pQ, pA1));
 
                 // pV = pV2 - pV1 * pQ
@@ -244,7 +244,7 @@ namespace ClsRS
                     // pVを正規化する（pVの定数項を１にする）
                     // pV,pAの各項をpV(0)[＝pVの定数項]で割る
                     // 帳尻を合わせるため、pAもpV(0)で割る
-                    // →それぞれ、誤り位置多項式、誤り評価多項式となる
+                    // →それぞれ、誤り位置多項式、誤り評価多項式とする
                     for (int cnt1 = 0; cnt1 < Math.Min(pV.Length, elp.Length); cnt1++)
                     {
                         elp[cnt1] = pV[cnt1] / pV[0];
@@ -255,8 +255,9 @@ namespace ClsRS
                     }
 
                     //{
-                    //    // for DEBUG
+                    //    // for DEBUG（検証用コード）
                     //    GF[] tmpU = new GF[pU.Length];
+                    //    // pUを正規化
                     //    for (int cnt1 = 0; cnt1 < pU.Length; cnt1++)
                     //    {
                     //        tmpU[cnt1] = pU[cnt1] / pV[0];
@@ -324,35 +325,20 @@ namespace ClsRS
         /// <param name="errP"></param>
         private void CalcErr(GF[] elp, GF[] eep, GF[] eLoc, GF[] errP)
         {
-            GF[] elpP = new GF[elp.Length - 1]; // elp(z)の導関数
+            GF[] dElp = new GF[elp.Length - 1]; // elp(z)の導関数
 
             // 誤り位置多項式を形式的に微分
-            elpP[0] = new GF(0, GF.InKind.inVal);
-            for (short cnt = 0; cnt < eLoc.Length; cnt++)
+            dElp[0] = new GF(0, GF.InKind.inVal);
+            for (short cnt = 1; cnt < elp.Length; cnt++)
             {
-                GF[] tmpElpP = new GF[elp.Length - 1];
-                tmpElpP[0] = new GF(0, GF.InKind.inExp);
-
-                for (int cnt1 = 0; cnt1 < eLoc.Length; cnt1++)
-                {
-                    if (cnt != cnt1)
-                    {
-                        GF[] tmpGF = new GF[] { new GF(0, GF.InKind.inExp), eLoc[cnt1] };
-                        tmpElpP = MulPoly(tmpElpP, tmpGF);
-                    }
-                }
-                for (int cnt1 = 0; cnt1 < tmpElpP.Length; cnt1++)
-                {
-                    tmpElpP[cnt1] *= eLoc[cnt];
-                }
-                elpP = PlusPoly(elpP, tmpElpP);
+                dElp[cnt - 1] = new GF(cnt, GF.InKind.inVal) * elp[cnt];
             }
 
+            // 各誤り値の算出
+            // e[k] = elp(α^(-jk) ÷ elpP(α^(-jk)) * eLoc[jk]
             for (int cnt = 0; cnt < eLoc.Length; cnt++)
             {
-                // 各誤り値の算出
-                // e[k] = elp(α^(-jk) ÷ elpP(α^(-jk)) * eLoc[jk]
-                GF elpPAlpha = SubstAlpha(elpP, (short)((GF_MOD - eLoc[cnt].exp) % GF_MOD));
+                GF elpPAlpha = SubstAlpha(dElp, (short)((GF_MOD - eLoc[cnt].exp) % GF_MOD));
                 GF eepAlpha = SubstAlpha(eep, (short)((GF_MOD - eLoc[cnt].exp) % GF_MOD));
                 errP[eLoc[cnt].exp] = eepAlpha / elpPAlpha * eLoc[cnt];
             }
@@ -385,6 +371,12 @@ namespace ClsRS
             return result;
         }
 
+        /// <summary>
+        /// p1÷p2の商を求める
+        /// </summary>
+        /// <param name="p1"></param>
+        /// <param name="p2"></param>
+        /// <returns></returns>
         private GF[] QuotPoly(GF[] p1, GF[] p2)
         {
             int p1Len = GetDegPoly(p1) + 1;
